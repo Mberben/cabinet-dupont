@@ -3,12 +3,15 @@
 
 require __DIR__ . '/../models/PostsManager.php';
 require __DIR__ . '/../models/CommentsManager.php';
+require_once __DIR__ . '/../models/ServicesManager.php';
 
 class PostsController{
 
  public function home() {
     $manager = new PostsManager();
-    $articles = []; // temporaire : plus de posts dans le cabinet
+    // Récupère les services et garde les 3 premiers pour l'aperçu de l'accueil
+    $servicesManager = new ServicesManager();
+    $services = array_slice($servicesManager->getServices(), 0, 3);
     require __DIR__ . '/../views/home.php';
 }
 

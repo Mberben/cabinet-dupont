@@ -1,4 +1,5 @@
 <?php include 'header.php'; ?>
+<?php /** @var Service[] $services */ ?>
 
 <section class="grid md:grid-cols-2 gap-10 items-center mb-16">
   <div>
@@ -16,19 +17,23 @@
 
 <section class="mb-16">
   <h2 class="text-2xl font-bold mb-6">Nos services</h2>
+  <?php // Grille responsive : 1 colonne sur mobile, 2 sur tablette (sm), 3 sur ordinateur (lg) ?>
   <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+
+    <?php // Boucle sur les services envoyés par le contrôleur : une carte par service ?>
+    <?php foreach ($services as $service) { ?>
+
     <article class="bg-white p-6 rounded-lg shadow">
-      <h3 class="font-semibold text-lg mb-2">Soins dentaires courants</h3>
-      <p class="text-gray-600">Consultation, détartrage, traitement des caries.</p>
+      <?php // Nom du service, protégé contre les failles XSS avec htmlspecialchars() ?>
+      <h3 class="font-semibold text-lg mb-2"><?= htmlspecialchars($service->getName()) ?></h3>
+
+      <?php // Description du service, protégée de la même façon ?>
+      <p class="text-gray-600"><?= htmlspecialchars($service->getDescription()) ?></p>
     </article>
-    <article class="bg-white p-6 rounded-lg shadow">
-      <h3 class="font-semibold text-lg mb-2">Orthodontie</h3>
-      <p class="text-gray-600">Correction de l'alignement des dents.</p>
-    </article>
-    <article class="bg-white p-6 rounded-lg shadow">
-      <h3 class="font-semibold text-lg mb-2">Implantologie</h3>
-      <p class="text-gray-600">Pose d'implants dentaires.</p>
-    </article>
+
+    <?php } ?>
+    <?php // Fin de la boucle ?>
+
   </div>
   <a href="index.php?page=services" class="inline-block mt-6 text-indigo-600 hover:underline">Voir tous nos services</a>
 </section>
