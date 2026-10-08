@@ -30,11 +30,17 @@ private function connectDB(): PDO
         }
     }
 
- public function register(string $name, string $email, string $password): void {
+    // Inscription d'un patient avec compte (mot de passe haché)
+    public function register(string $firstname, string $lastname, string $email, string $password): void {
     $pdo = $this->connectDB();
     $hash = password_hash($password, PASSWORD_DEFAULT);
-    $request = $pdo->prepare('INSERT INTO users (name, email, password) VALUES (?, ?, ?)');
-    $request->execute([$name, $email, $hash]);
+    $request = $pdo->prepare('INSERT INTO users (firstname, lastname, email, password) VALUES (:firstname, :lastname, :email, :password)');
+    $request->execute([
+        'firstname' => $firstname,
+        'lastname'  => $lastname,
+        'email'     => $email,
+        'password'  => $hash
+    ]);
     }
 
     public function getUser(string $email): User|null {
@@ -48,4 +54,18 @@ private function connectDB(): PDO
         return null;
     }
 }
+
+// Complète le compte d'un patient qui avait pris RDV sans compte
+public function completeAccount(int $id, string $firstname, string $lastname, string $password): void {
+    $pdo = $this->connectDB();
+    $hash = password_hash($password, PASSWORD_DEFAULT);
+    $request = $pdo->prepare('UPDATE users SET firstname = :firstname, lastname = :lastname, password = :password WHERE id = :id');
+    $request->execute([
+        'firstname' => $firstname,
+        'lastname'  => $lastname,
+        'password'  => $hash,
+        'id'        => $id
+    ]);
+}
+
 }
