@@ -66,6 +66,9 @@ else if($page === 'comment') {
 else if($page === 'create-tag') {
     $adminController->createTag();
 }
+ else if ($page === 'services') {
+    $postsController->services();
+ }
 
 
 

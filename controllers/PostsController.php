@@ -54,4 +54,12 @@ class PostsController{
     }
 
  }
+
+ // Page Services : affiche tous les services du cabinet
+    public function services(){
+    $servicesManager = new ServicesManager();
+    $services = $servicesManager->getServices();
+
+    require __DIR__ . '/../views/services.php';
+    }
 }
