@@ -47,4 +47,11 @@ class ServicesManager {
         // Renvoie la liste des services au contrôleur
         return $services;
     }
+        // Supprime un service (MySQL refuse si un rendez-vous l'utilise : ON DELETE RESTRICT)
+    public function deleteService(int $id): void
+    {
+        $pdo = $this->connectDB();
+        $request = $pdo->prepare('DELETE FROM services WHERE id = :id');
+        $request->execute(['id' => $id]);
+    }
 }

@@ -68,6 +68,11 @@ else if($page === 'create-tag') {
 }
  else if ($page === 'services') {
     $postsController->services();
+} else if ($page === 'admin-services') {
+    $adminController->adminServices();
+}
+ else if ($page === 'delete-service') {
+    $adminController->deleteService();
  }
 
 

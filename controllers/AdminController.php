@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../models/PostsManager.php';
 require_once __DIR__ . '/../models/TagsManager.php';
+require_once __DIR__ . '/../models/ServicesManager.php';
 
 class AdminController {
 
@@ -19,6 +20,30 @@ class AdminController {
     public function admin() {
         $this->requireStaff();
         require 'views/admin.php';
+    }
+
+    // ===== SERVICES =====
+     public function adminServices() {
+        $this->requireStaff();
+        $servicesManager = new ServicesManager();
+        $services = $servicesManager->getServices();
+        require 'views/admin-services.php';
+    }
+        // Suppression d'un service
+    public function deleteService() {
+        $this->requireStaff();
+
+        $id = (int) ($_POST['id'] ?? 0);
+
+        try {
+            $servicesManager = new ServicesManager();
+            $servicesManager->deleteService($id);
+            header('Location: index.php?page=admin-services&success=deleted');
+        } catch (PDOException $e) {
+            // Le service est lié à au moins un rendez-vous : MySQL bloque la suppression
+            header('Location: index.php?page=admin-services&error=used');
+        }
+        exit;
     }
 
     public function adminPosts() {
