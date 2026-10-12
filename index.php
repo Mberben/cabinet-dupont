@@ -79,7 +79,11 @@ else if($page === 'create-tag') {
 } else if ($page === 'create-service-valid') {
     $adminController->createServiceValid();
 }
-
+else if ($page === 'news') {
+    $postsController->newsList();
+} else if ($page === 'news-detail') {
+    $postsController->newsDetail();
+}
 
 
 

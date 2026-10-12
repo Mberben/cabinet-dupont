@@ -4,6 +4,7 @@
 require __DIR__ . '/../models/PostsManager.php';
 require __DIR__ . '/../models/CommentsManager.php';
 require_once __DIR__ . '/../models/ServicesManager.php';
+require_once __DIR__ . '/../models/NewsManager.php';
 
 class PostsController{
 
@@ -61,5 +62,27 @@ class PostsController{
     $services = $servicesManager->getServices();
 
     require __DIR__ . '/../views/services.php';
+    }
+
+        // Page Actualités : liste de toutes les actualités
+    public function newsList()
+    {
+        $newsManager = new NewsManager();
+        $newsList = $newsManager->getAllNews();
+        require __DIR__ . '/../views/news.php';
+    }
+
+    // Page d'une actualité seule
+    public function newsDetail()
+    {
+        $newsManager = new NewsManager();
+        $news = $newsManager->getNews((int) ($_GET['id'] ?? 0));
+
+        if (!$news) {
+            header('Location: index.php?page=news');
+            exit;
+        }
+
+        require __DIR__ . '/../views/news-detail.php';
     }
 }
