@@ -46,6 +46,54 @@ class AdminController {
         exit;
     }
 
+        // Affiche le formulaire d'ajout d'un service
+    public function createService() {
+        $this->requireStaff();
+        require 'views/create-service.php';
+    }
+
+    // Traitement du formulaire d'ajout
+    public function createServiceValid() {
+        $this->requireStaff();
+
+        $name        = trim($_POST['name'] ?? '');
+        $description = trim($_POST['description'] ?? '');
+        $duration    = (int) ($_POST['duration'] ?? 0);
+
+        // Champs obligatoires et durée positive
+        if (strlen($name) < 3 || strlen($description) < 10 || $duration <= 0) {
+            header('Location: index.php?page=create-service&error=fields');
+            exit;
+        }
+
+        // Image facultative : même vérifications que pour les articles du blog
+        $newFileName = null;
+
+        if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+            $imageFileType = strtolower(pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION));
+
+            if (!getimagesize($_FILES['image']['tmp_name'])
+                || $_FILES['image']['size'] > 2 * 1024 * 1024
+                || !in_array($imageFileType, ['jpeg', 'jpg', 'png', 'gif', 'webp'])) {
+                header('Location: index.php?page=create-service&error=image');
+                exit;
+            }
+
+            $newFileName = uniqid('img_', true) . '.' . $imageFileType;
+
+            if (!move_uploaded_file($_FILES['image']['tmp_name'], __DIR__ . '/../uploads/' . $newFileName)) {
+                header('Location: index.php?page=create-service&error=upload');
+                exit;
+            }
+        }
+
+        $servicesManager = new ServicesManager();
+        $servicesManager->createService($name, $description, $duration, $newFileName);
+
+        header('Location: index.php?page=admin-services&success=created');
+        exit;
+    }
+
     public function adminPosts() {
         $this->requireStaff();
         $manager = new PostsManager();

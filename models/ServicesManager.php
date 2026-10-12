@@ -54,4 +54,17 @@ class ServicesManager {
         $request = $pdo->prepare('DELETE FROM services WHERE id = :id');
         $request->execute(['id' => $id]);
     }
+
+        // Ajoute un nouveau service (l'image est facultative : null si aucune)
+    public function createService(string $name, string $description, int $duration, ?string $image): void
+    {
+        $pdo = $this->connectDB();
+        $request = $pdo->prepare('INSERT INTO services (name, description, duration, image) VALUES (:name, :description, :duration, :image)');
+        $request->execute([
+            'name'        => $name,
+            'description' => $description,
+            'duration'    => $duration,
+            'image'       => $image
+        ]);
+    }
 }

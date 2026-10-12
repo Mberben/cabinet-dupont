@@ -73,7 +73,12 @@ else if($page === 'create-tag') {
 }
  else if ($page === 'delete-service') {
     $adminController->deleteService();
- }
+}
+ else if ($page === 'create-service') {
+    $adminController->createService();
+} else if ($page === 'create-service-valid') {
+    $adminController->createServiceValid();
+}
 
 
 

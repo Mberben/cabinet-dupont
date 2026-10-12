@@ -13,6 +13,10 @@
 <?php if (($_GET['success'] ?? '') === 'deleted') { ?>
   <p class="bg-green-100 text-green-700 p-4 rounded-lg mb-6">Le service a bien été supprimé.</p>
 <?php } ?>
+<?php // ← nouveau : message après un ajout ?>
+<?php if (($_GET['success'] ?? '') === 'created') { ?>
+  <p class="bg-green-100 text-green-700 p-4 rounded-lg mb-6">Le service a bien été ajouté.</p>
+<?php } ?>
  
 <?php // Tableau des services : nom, durée et actions ?>
 <table class="w-full bg-white shadow rounded-lg">
