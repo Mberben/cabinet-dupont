@@ -1,9 +1,12 @@
 <?php
-require_once __DIR__ . '/../models/PostsManager.php';
-require_once __DIR__ . '/../models/TagsManager.php';
+// Chargement des managers utilisés par le back office
 require_once __DIR__ . '/../models/ServicesManager.php';
+require_once __DIR__ . '/../models/NewsManager.php';
 
+// Contrôleur du back office : toutes les pages réservées au personnel du cabinet
 class AdminController {
+
+    // ===== OUTILS =====
 
     // Vérifie que l'utilisateur est connecté ET fait partie du personnel (admin ou staff)
     // Sinon : redirection vers la connexion
@@ -17,19 +20,55 @@ class AdminController {
         }
     }
 
+    // Gère l'upload d'une image : renvoie le nouveau nom, null si aucun fichier,
+    // ou redirige vers $errorUrl si l'image est invalide
+    private function uploadImage(string $errorUrl): ?string
+    {
+        // Aucun fichier envoyé : on renvoie null (l'appelant décide quoi faire)
+        if (!isset($_FILES['image']) || $_FILES['image']['error'] !== UPLOAD_ERR_OK) {
+            return null;
+        }
+
+        $imageFileType = strtolower(pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION));
+
+        // Vérifications : vraie image, 2 Mo maximum, format autorisé
+        if (!getimagesize($_FILES['image']['tmp_name'])
+            || $_FILES['image']['size'] > 2 * 1024 * 1024
+            || !in_array($imageFileType, ['jpeg', 'jpg', 'png', 'gif', 'webp'])) {
+            header('Location: ' . $errorUrl . '&error=image');
+            exit;
+        }
+
+        // Nom unique pour éviter d'écraser une image existante
+        $newFileName = uniqid('img_', true) . '.' . $imageFileType;
+
+        if (!move_uploaded_file($_FILES['image']['tmp_name'], __DIR__ . '/../uploads/' . $newFileName)) {
+            header('Location: ' . $errorUrl . '&error=upload');
+            exit;
+        }
+
+        return $newFileName;
+    }
+
+    // ===== TABLEAU DE BORD =====
+
+    // Page d'accueil du back office
     public function admin() {
         $this->requireStaff();
         require 'views/admin.php';
     }
 
     // ===== SERVICES =====
-     public function adminServices() {
+
+    // Liste des services
+    public function adminServices() {
         $this->requireStaff();
         $servicesManager = new ServicesManager();
         $services = $servicesManager->getServices();
         require 'views/admin-services.php';
     }
-        // Suppression d'un service
+
+    // Suppression d'un service
     public function deleteService() {
         $this->requireStaff();
 
@@ -40,19 +79,19 @@ class AdminController {
             $servicesManager->deleteService($id);
             header('Location: index.php?page=admin-services&success=deleted');
         } catch (PDOException $e) {
-            // Le service est lié à au moins un rendez-vous : MySQL bloque la suppression
+            // Service lié à au moins un rendez-vous : MySQL bloque (ON DELETE RESTRICT)
             header('Location: index.php?page=admin-services&error=used');
         }
         exit;
     }
 
-        // Affiche le formulaire d'ajout d'un service
+    // Formulaire d'ajout d'un service
     public function createService() {
         $this->requireStaff();
         require 'views/create-service.php';
     }
 
-    // Traitement du formulaire d'ajout
+    // Traitement de l'ajout d'un service
     public function createServiceValid() {
         $this->requireStaff();
 
@@ -66,184 +105,154 @@ class AdminController {
             exit;
         }
 
-        // Image facultative : même vérifications que pour les articles du blog
-        $newFileName = null;
-
-        if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
-            $imageFileType = strtolower(pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION));
-
-            if (!getimagesize($_FILES['image']['tmp_name'])
-                || $_FILES['image']['size'] > 2 * 1024 * 1024
-                || !in_array($imageFileType, ['jpeg', 'jpg', 'png', 'gif', 'webp'])) {
-                header('Location: index.php?page=create-service&error=image');
-                exit;
-            }
-
-            $newFileName = uniqid('img_', true) . '.' . $imageFileType;
-
-            if (!move_uploaded_file($_FILES['image']['tmp_name'], __DIR__ . '/../uploads/' . $newFileName)) {
-                header('Location: index.php?page=create-service&error=upload');
-                exit;
-            }
-        }
+        // Image facultative
+        $image = $this->uploadImage('index.php?page=create-service');
 
         $servicesManager = new ServicesManager();
-        $servicesManager->createService($name, $description, $duration, $newFileName);
+        $servicesManager->createService($name, $description, $duration, $image);
 
         header('Location: index.php?page=admin-services&success=created');
         exit;
     }
 
-    public function adminPosts() {
-        $this->requireStaff();
-        $manager = new PostsManager();
-        $articles = $manager->getPosts();
-        require 'views/admin-posts.php';
-    }
-
-    public function adminTags() {
-        $this->requireStaff();
-        $tagsmanager = new TagsManager();
-        $tags = $tagsmanager->getTags();
-        require 'views/admin-tags.php';
-    }
-
-    public function adminCreatePost() {
-        $this->requireStaff();
-        $tagsmanager = new TagsManager();
-        $tags = $tagsmanager->getTags();
-        require 'views/create-article.php';
-    }
-
-    public function adminCreatePostValid()
-    {
+    // Formulaire de modification d'un service, pré-rempli
+    public function updateService() {
         $this->requireStaff();
 
-        $resume  = trim($_POST['description'] ?? '');
-        $title   = trim($_POST['title'] ?? '');
-        $content = trim($_POST['content'] ?? '');
-        $tags    = $_POST['tags'] ?? [];
+        $servicesManager = new ServicesManager();
+        $service = $servicesManager->getService((int) ($_GET['id'] ?? 0));
 
-        if (strlen($title) < 3 || strlen($content) < 10 || strlen($resume) < 3) {
-            header('Location: index.php?page=create-post&error=true');
+        // Service introuvable : retour à la liste
+        if (!$service) {
+            header('Location: index.php?page=admin-services');
             exit;
         }
 
-        $newFileName = null;
+        require 'views/update-service.php';
+    }
 
-        if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
-            $imageFileType = strtolower(pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION));
+    // Traitement de la modification d'un service
+    public function updateServiceValid() {
+        $this->requireStaff();
 
-            if (!getimagesize($_FILES['image']['tmp_name'])
-                || $_FILES['image']['size'] > 2 * 1024 * 1024
-                || !in_array($imageFileType, ['jpeg', 'jpg', 'png', 'gif'])) {
-                header('Location: index.php?page=create-post&error=true');
-                exit;
-            }
+        $id          = (int) ($_GET['id'] ?? 0);
+        $name        = trim($_POST['name'] ?? '');
+        $description = trim($_POST['description'] ?? '');
+        $duration    = (int) ($_POST['duration'] ?? 0);
 
-            $newFileName = uniqid('img_', true) . '.' . $imageFileType;
+        $servicesManager = new ServicesManager();
+        $service = $servicesManager->getService($id);
 
-            if (!move_uploaded_file($_FILES['image']['tmp_name'], __DIR__ . '/../uploads/' . $newFileName)) {
-                header('Location: index.php?page=create-post&error=upload');
-                exit;
-            }
+        if (!$service) {
+            header('Location: index.php?page=admin-services');
+            exit;
         }
 
-        $manager = new PostsManager();
-        $manager->createPost($title, $content, $resume, $newFileName, $tags);
-        header('Location: index.php?page=admin-posts');
+        if (strlen($name) < 3 || strlen($description) < 10 || $duration <= 0) {
+            header('Location: index.php?page=update-service&id=' . $id . '&error=fields');
+            exit;
+        }
+
+        // Nouvelle image si envoyée, sinon on garde l'ancienne
+        $image = $this->uploadImage('index.php?page=update-service&id=' . $id) ?? $service->getImage();
+
+        $servicesManager->updateService($id, $name, $description, $duration, $image);
+
+        header('Location: index.php?page=admin-services&success=updated');
         exit;
     }
 
-    public function deletePost()
-    {
+    // ===== ACTUALITÉS =====
+
+    // Liste des actualités
+    public function adminNews() {
         $this->requireStaff();
-
-        if (!isset($_GET['id'])) {
-            header('Location: index.php?page=admin-posts');
-            exit;
-        }
-
-        $manager = new PostsManager();
-        $manager->deletePost((int) $_GET['id']);
-        header('Location: index.php?page=admin-posts');
-        exit;
+        $newsManager = new NewsManager();
+        $newsList = $newsManager->getAllNews();
+        require 'views/admin-news.php';
     }
 
-    public function updatePost() {
+    // Formulaire d'ajout d'une actualité
+    public function createNews() {
         $this->requireStaff();
-
-        if (!isset($_GET['id'])) {
-            header('Location: index.php?page=admin-posts');
-            exit;
-        }
-
-        $manager = new PostsManager();
-        $article = $manager->getPost((int) $_GET['id']);
-
-        if (!$article) {
-            header('Location: index.php?page=admin-posts');
-            exit;
-        }
-
-        require 'views/update-post.php';
+        require 'views/create-news.php';
     }
 
-    public function updatePostValid() {
+    // Traitement de l'ajout d'une actualité
+    public function createNewsValid() {
         $this->requireStaff();
 
-        if (!isset($_GET['id'])) {
-            header('Location: index.php?page=admin-posts');
-            exit;
-        }
-
-        $id      = (int) $_GET['id'];
-        $resume  = trim($_POST['description'] ?? '');
         $title   = trim($_POST['title'] ?? '');
         $content = trim($_POST['content'] ?? '');
 
-        if (strlen($title) < 3 || strlen($content) < 10 || strlen($resume) < 3) {
-            header('Location: index.php?page=update-post&id=' . $id . '&error=true');
+        if (strlen($title) < 3 || strlen($content) < 10) {
+            header('Location: index.php?page=create-news&error=fields');
             exit;
         }
 
-        $newFileName = null;
+        $image = $this->uploadImage('index.php?page=create-news');
 
-        if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
-            $imageFileType = strtolower(pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION));
+        // L'auteur est la personne connectée
+        $newsManager = new NewsManager();
+        $newsManager->createNews($title, $content, $image, (int) $_SESSION['user_id']);
 
-            if (!getimagesize($_FILES['image']['tmp_name'])
-                || $_FILES['image']['size'] > 2 * 1024 * 1024
-                || !in_array($imageFileType, ['jpeg', 'jpg', 'png', 'gif'])) {
-                header('Location: index.php?page=update-post&id=' . $id . '&error=true');
-                exit;
-            }
-
-            $newFileName = uniqid('img_', true) . '.' . $imageFileType;
-
-            if (!move_uploaded_file($_FILES['image']['tmp_name'], __DIR__ . '/../uploads/' . $newFileName)) {
-                header('Location: index.php?page=update-post&id=' . $id . '&error=upload');
-                exit;
-            }
-        }
-
-        $manager = new PostsManager();
-        $manager->updatePost($id, $title, $content, $resume, $newFileName);
-        header('Location: index.php?page=admin-posts');
+        header('Location: index.php?page=admin-news&success=created');
         exit;
     }
 
-    public function createTag() {
+    // Formulaire de modification d'une actualité, pré-rempli
+    public function updateNews() {
         $this->requireStaff();
 
-        $name = trim($_POST['name'] ?? '');
+        $newsManager = new NewsManager();
+        $news = $newsManager->getNews((int) ($_GET['id'] ?? 0));
 
-        if ($name) {
-            $tagsmanager = new TagsManager();
-            $tagsmanager->createTag($name);
+        if (!$news) {
+            header('Location: index.php?page=admin-news');
+            exit;
         }
 
-        header('Location: index.php?page=admin-tags');
+        require 'views/update-news.php';
+    }
+
+    // Traitement de la modification d'une actualité
+    public function updateNewsValid() {
+        $this->requireStaff();
+
+        $id      = (int) ($_GET['id'] ?? 0);
+        $title   = trim($_POST['title'] ?? '');
+        $content = trim($_POST['content'] ?? '');
+
+        $newsManager = new NewsManager();
+        $news = $newsManager->getNews($id);
+
+        if (!$news) {
+            header('Location: index.php?page=admin-news');
+            exit;
+        }
+
+        if (strlen($title) < 3 || strlen($content) < 10) {
+            header('Location: index.php?page=update-news&id=' . $id . '&error=fields');
+            exit;
+        }
+
+        // Nouvelle image si envoyée, sinon on garde l'ancienne
+        $image = $this->uploadImage('index.php?page=update-news&id=' . $id) ?? $news->getImage();
+
+        $newsManager->updateNews($id, $title, $content, $image);
+
+        header('Location: index.php?page=admin-news&success=updated');
+        exit;
+    }
+
+    // Suppression d'une actualité (aucune autre table n'en dépend : pas de try/catch)
+    public function deleteNews() {
+        $this->requireStaff();
+
+        $newsManager = new NewsManager();
+        $newsManager->deleteNews((int) ($_POST['id'] ?? 0));
+
+        header('Location: index.php?page=admin-news&success=deleted');
         exit;
     }
 }

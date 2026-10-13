@@ -19,18 +19,6 @@ if($page === 'home'){
 else if($page === 'admin') {
     $adminController->admin();
 }
-else if($page === 'create-post') {
-    $adminController->adminCreatePost();
-}
-else if($page === 'create-post-traitement') {
-    $adminController->adminCreatePostValid();
-}
- else if ($page === 'admin-posts') {
-    $adminController->adminPosts();
-}
- else if ($page === 'admin-tags') {
-    $adminController->adminTags();
-}
 else if($page=== 'register') {
     $usersController->register();
 }
@@ -48,23 +36,12 @@ else if($page === 'login-valid') {
 else if($page === 'logout') {
     $usersController->logout();
 }
-else if($page === 'delete-post') {
-    $adminController->deletePost();
-}
-else if($page === 'update-post') {
-    $adminController->updatePost();
-}
-else if($page === 'update-post-valid') {
-    $adminController->updatePostValid();
-}
+
 else if($page === 'post') {
     $postsController->post();
 }
 else if($page === 'comment') {
     $postsController->comment();
-}
-else if($page === 'create-tag') {
-    $adminController->createTag();
 }
  else if ($page === 'services') {
     $postsController->services();

@@ -51,4 +51,37 @@ class NewsManager {
 
         return $data ? new News($data) : null;
     }
+        // Ajoute une actualité (l'auteur est l'utilisateur connecté)
+    public function createNews(string $title, string $content, ?string $image, int $userId): void
+    {
+        $pdo = $this->connectDB();
+        $request = $pdo->prepare('INSERT INTO news (title, content, image, user_id) VALUES (:title, :content, :image, :user_id)');
+        $request->execute([
+            'title'   => $title,
+            'content' => $content,
+            'image'   => $image,
+            'user_id' => $userId
+        ]);
+    }
+
+    // Met à jour une actualité (l'auteur et la date de publication ne changent pas)
+    public function updateNews(int $id, string $title, string $content, ?string $image): void
+    {
+        $pdo = $this->connectDB();
+        $request = $pdo->prepare('UPDATE news SET title = :title, content = :content, image = :image WHERE id = :id');
+        $request->execute([
+            'title'   => $title,
+            'content' => $content,
+            'image'   => $image,
+            'id'      => $id
+        ]);
+    }
+
+    // Supprime une actualité
+    public function deleteNews(int $id): void
+    {
+        $pdo = $this->connectDB();
+        $request = $pdo->prepare('DELETE FROM news WHERE id = :id');
+        $request->execute(['id' => $id]);
+    }
 }
