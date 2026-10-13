@@ -15,8 +15,8 @@
     Services
   </a>
   <?php // Pointe encore vers la gestion des articles du blog, en attendant sa transformation en actualités ?>
-  <a href="index.php?page=admin-posts" class="px-10 py-6 text-2xl text-center font-semibold rounded-2xl bg-indigo-600 text-white shadow-lg hover:bg-indigo-700 transition">
-    Actualités
+  <a href="index.php?page=admin-news" class="px-10 py-6 text-2xl text-center font-semibold rounded-2xl bg-indigo-600 text-white shadow-lg hover:bg-indigo-700 transition">
+  Actualités
   </a>
   <a href="index.php?page=admin-hours" class="px-10 py-6 text-2xl text-center font-semibold rounded-2xl bg-indigo-600 text-white shadow-lg hover:bg-indigo-700 transition">
     Horaires

@@ -56,11 +56,29 @@ else if($page === 'comment') {
 } else if ($page === 'create-service-valid') {
     $adminController->createServiceValid();
 }
-else if ($page === 'news') {
+ else if ($page === 'news') {
     $postsController->newsList();
 } else if ($page === 'news-detail') {
     $postsController->newsDetail();
+} else if ($page === 'admin-news') {
+    $adminController->adminNews();
+} else if ($page === 'create-news') {
+    $adminController->createNews();
+} else if ($page === 'create-news-valid') {
+    $adminController->createNewsValid();
+} else if ($page === 'update-news') {
+    $adminController->updateNews();
+} else if ($page === 'update-news-valid') {
+    $adminController->updateNewsValid();
+} else if ($page === 'delete-news') {
+    $adminController->deleteNews();
 }
+ else {
+    http_response_code(404);
+    echo "Page introuvable";
+}
+
+
 
 
 
