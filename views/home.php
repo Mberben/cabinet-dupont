@@ -1,5 +1,6 @@
 <?php include 'header.php'; ?>
 <?php /** @var Service[] $services */ ?>
+<?php /** @var array $hoursByDay */ ?>
 
 <section class="grid md:grid-cols-2 gap-10 items-center mb-16">
   <div>
@@ -17,22 +18,27 @@
 
 <section class="mb-16">
   <h2 class="text-2xl font-bold mb-6">Nos services</h2>
-  <?php // Grille responsive : 1 colonne sur mobile, 2 sur tablette (sm), 3 sur ordinateur (lg) ?>
+  <?php // Grille responsive : 1 colonne sur mobile, 2 sur tablette (sm), 3 sur ordinateur (lg) 
+  ?>
   <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
 
-    <?php // Boucle sur les services envoyés par le contrôleur : une carte par service ?>
+    <?php // Boucle sur les services envoyés par le contrôleur : une carte par service 
+    ?>
     <?php foreach ($services as $service) { ?>
 
-    <article class="bg-white p-6 rounded-lg shadow">
-      <?php // Nom du service, protégé contre les failles XSS avec htmlspecialchars() ?>
-      <h3 class="font-semibold text-lg mb-2"><?= htmlspecialchars($service->getName()) ?></h3>
+      <article class="bg-white p-6 rounded-lg shadow">
+        <?php // Nom du service, protégé contre les failles XSS avec htmlspecialchars() 
+        ?>
+        <h3 class="font-semibold text-lg mb-2"><?= htmlspecialchars($service->getName()) ?></h3>
 
-      <?php // Description du service, protégée de la même façon ?>
-      <p class="text-gray-600"><?= htmlspecialchars($service->getDescription()) ?></p>
-    </article>
+        <?php // Description du service, protégée de la même façon 
+        ?>
+        <p class="text-gray-600"><?= htmlspecialchars($service->getDescription()) ?></p>
+      </article>
 
     <?php } ?>
-    <?php // Fin de la boucle ?>
+    <?php // Fin de la boucle 
+    ?>
 
   </div>
   <a href="index.php?page=services" class="inline-block mt-6 text-indigo-600 hover:underline">Voir tous nos services</a>
@@ -41,10 +47,29 @@
 <section>
   <h2 class="text-2xl font-bold mb-6">Horaires d'ouverture</h2>
   <ul class="bg-white p-6 rounded-lg shadow max-w-md space-y-2">
-    <li class="flex justify-between"><span>Lundi – Mardi</span><span>8h-12h / 14h-18h</span></li>
-    <li class="flex justify-between"><span>Mercredi</span><span>8h-12h</span></li>
-    <li class="flex justify-between"><span>Jeudi – Vendredi</span><span>8h-12h / 14h-18h</span></li>
-    <li class="flex justify-between"><span>Samedi – Dimanche</span><span>Fermé</span></li>
+    <?php // On parcourt les 7 jours, même ceux qui n'ont aucune plage en base 
+    ?>
+    <?php foreach (OpeningHour::DAYS as $dayNumber => $dayName) { ?>
+      <?php
+      $slots = $hoursByDay[$dayNumber] ?? [];
+      // Fermé si aucune plage, ou si la plage est marquée is_closed
+      $closed = empty($slots) || $slots[0]->isClosed();
+      // date('N') = numéro du jour actuel : on met aujourd'hui en évidence
+      $isToday = (int) date('N') === $dayNumber;
+      ?>
+      <li class="flex justify-between gap-4 <?= $isToday ? 'font-semibold text-indigo-600' : '' ?>">
+        <span><?= $dayName ?><?= $isToday ? " (aujourd'hui)" : '' ?></span>
+        <span>
+          <?php if ($closed) { ?>
+            Fermé
+          <?php } else { ?>
+            <?php // Toutes les plages du jour, séparées par " / " 
+            ?>
+            <?= implode(' / ', array_map(fn($slot) => $slot->getLabel(), $slots)) ?>
+          <?php } ?>
+        </span>
+      </li>
+    <?php } ?>
   </ul>
 </section>
 

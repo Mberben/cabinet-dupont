@@ -1,74 +1,42 @@
 <?php
-
-
-require __DIR__ . '/../models/PostsManager.php';
-require __DIR__ . '/../models/CommentsManager.php';
+// Chargement des managers utilisés par les pages publiques
 require_once __DIR__ . '/../models/ServicesManager.php';
 require_once __DIR__ . '/../models/NewsManager.php';
+require_once __DIR__ . '/../models/OpeningHoursManager.php';
 
-class PostsController{
+// Contrôleur des pages publiques (front office)
+class PostsController {
 
- public function home() {
-    $manager = new PostsManager();
-    // Récupère les services et garde les 3 premiers pour l'aperçu de l'accueil
-    $servicesManager = new ServicesManager();
-    $services = array_slice($servicesManager->getServices(), 0, 3);
-    require __DIR__ . '/../views/home.php';
-}
+    // Page d'accueil : aperçu des services et horaires d'ouverture
+    public function home()
+    {
+        // Récupère les services et garde les 3 premiers pour l'aperçu de l'accueil
+        $servicesManager = new ServicesManager();
+        $services = array_slice($servicesManager->getServices(), 0, 3);
 
- public function post() {
+        // Horaires regroupés par jour
+        $hoursManager = new OpeningHoursManager();
+        $hoursByDay = $hoursManager->getHoursByDay();
 
-    if(!isset($_GET['id'])){
-        header('location: index.php');
-        exit;
-    }
-    $id = $_GET['id'];
-    $postManager = new PostsManager();
-    $commentsManager = new CommentsManager();
-    $article = $postManager->getPost($id);
-    $tags = $postManager->getTagsPost($id);
-    $comments = $commentsManager->getComments($id);
-    
-
-    
-
- require 'views/article.php';
- } 
-
- public function comment(){
-
-    if(!isset($_GET['id'])){
-        header('location: index.php');
-        exit;
-    }
-    $id = $_GET['id'];
-
-    $author = trim($_POST['author']);
-    $content = trim($_POST['content']);
-    if(!$author || !$content){
-        header('location: index.php?page=post&id=' . $id);
-        
-    }else{ 
-        $commentsManager = new CommentsManager();
-        $commentsManager->createComment($id, $author, $content);
-        header('Location: index.php?page=post&id=' . $id);
+        // Toujours en dernier : on affiche la vue une fois toutes les données prêtes
+        require __DIR__ . '/../views/home.php';
     }
 
- }
+    // Page Services : tous les services du cabinet
+    public function services()
+    {
+        $servicesManager = new ServicesManager();
+        $services = $servicesManager->getServices();
 
- // Page Services : affiche tous les services du cabinet
-    public function services(){
-    $servicesManager = new ServicesManager();
-    $services = $servicesManager->getServices();
-
-    require __DIR__ . '/../views/services.php';
+        require __DIR__ . '/../views/services.php';
     }
 
-        // Page Actualités : liste de toutes les actualités
+    // Page Actualités : liste de toutes les actualités
     public function newsList()
     {
         $newsManager = new NewsManager();
         $newsList = $newsManager->getAllNews();
+
         require __DIR__ . '/../views/news.php';
     }
 
@@ -78,6 +46,7 @@ class PostsController{
         $newsManager = new NewsManager();
         $news = $newsManager->getNews((int) ($_GET['id'] ?? 0));
 
+        // Actualité introuvable : retour à la liste
         if (!$news) {
             header('Location: index.php?page=news');
             exit;

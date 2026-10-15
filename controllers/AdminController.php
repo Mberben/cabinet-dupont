@@ -2,6 +2,7 @@
 // Chargement des managers utilisés par le back office
 require_once __DIR__ . '/../models/ServicesManager.php';
 require_once __DIR__ . '/../models/NewsManager.php';
+require_once __DIR__ . '/../models/OpeningHoursManager.php';
 
 // Contrôleur du back office : toutes les pages réservées au personnel du cabinet
 class AdminController {
@@ -54,7 +55,7 @@ class AdminController {
 
     // Page d'accueil du back office
     public function admin() {
-        $this->requireStaff();
+        Auth::requireStaff();
         require 'views/admin.php';
     }
 
@@ -62,7 +63,7 @@ class AdminController {
 
     // Liste des services
     public function adminServices() {
-        $this->requireStaff();
+        Auth::requireStaff();
         $servicesManager = new ServicesManager();
         $services = $servicesManager->getServices();
         require 'views/admin-services.php';
@@ -70,7 +71,7 @@ class AdminController {
 
     // Suppression d'un service
     public function deleteService() {
-        $this->requireStaff();
+        Auth::requireStaff();
 
         $id = (int) ($_POST['id'] ?? 0);
 
@@ -87,13 +88,13 @@ class AdminController {
 
     // Formulaire d'ajout d'un service
     public function createService() {
-        $this->requireStaff();
+        Auth::requireStaff();
         require 'views/create-service.php';
     }
 
     // Traitement de l'ajout d'un service
     public function createServiceValid() {
-        $this->requireStaff();
+        Auth::requireStaff();
 
         $name        = trim($_POST['name'] ?? '');
         $description = trim($_POST['description'] ?? '');
@@ -117,7 +118,7 @@ class AdminController {
 
     // Formulaire de modification d'un service, pré-rempli
     public function updateService() {
-        $this->requireStaff();
+        Auth::requireStaff();
 
         $servicesManager = new ServicesManager();
         $service = $servicesManager->getService((int) ($_GET['id'] ?? 0));
@@ -133,7 +134,7 @@ class AdminController {
 
     // Traitement de la modification d'un service
     public function updateServiceValid() {
-        $this->requireStaff();
+        Auth::requireStaff();
 
         $id          = (int) ($_GET['id'] ?? 0);
         $name        = trim($_POST['name'] ?? '');
@@ -166,7 +167,7 @@ class AdminController {
 
     // Liste des actualités
     public function adminNews() {
-        $this->requireStaff();
+        Auth::requireStaff();
         $newsManager = new NewsManager();
         $newsList = $newsManager->getAllNews();
         require 'views/admin-news.php';
@@ -174,13 +175,13 @@ class AdminController {
 
     // Formulaire d'ajout d'une actualité
     public function createNews() {
-        $this->requireStaff();
+        Auth::requireStaff();
         require 'views/create-news.php';
     }
 
     // Traitement de l'ajout d'une actualité
     public function createNewsValid() {
-        $this->requireStaff();
+        Auth::requireStaff();
 
         $title   = trim($_POST['title'] ?? '');
         $content = trim($_POST['content'] ?? '');
@@ -202,7 +203,7 @@ class AdminController {
 
     // Formulaire de modification d'une actualité, pré-rempli
     public function updateNews() {
-        $this->requireStaff();
+        Auth::requireStaff();
 
         $newsManager = new NewsManager();
         $news = $newsManager->getNews((int) ($_GET['id'] ?? 0));
@@ -217,7 +218,7 @@ class AdminController {
 
     // Traitement de la modification d'une actualité
     public function updateNewsValid() {
-        $this->requireStaff();
+        Auth::requireStaff();
 
         $id      = (int) ($_GET['id'] ?? 0);
         $title   = trim($_POST['title'] ?? '');
@@ -247,12 +248,89 @@ class AdminController {
 
     // Suppression d'une actualité (aucune autre table n'en dépend : pas de try/catch)
     public function deleteNews() {
-        $this->requireStaff();
+        Auth::requireStaff();
 
         $newsManager = new NewsManager();
         $newsManager->deleteNews((int) ($_POST['id'] ?? 0));
 
         header('Location: index.php?page=admin-news&success=deleted');
+        exit;
+    }
+        // ===== HORAIRES =====
+
+    // Page de gestion des horaires : toutes les plages dans un formulaire
+    public function adminHours() {
+        Auth::requireStaff();
+        $hoursManager = new OpeningHoursManager();
+        $hours = $hoursManager->getOpeningHours();
+        require 'views/admin-hours.php';
+    }
+
+    // Enregistre toutes les plages modifiées d'un coup
+    public function updateHoursValid() {
+        Auth::requireStaff();
+
+        // $_POST['hours'] = [id => ['open_time' => ..., 'close_time' => ..., 'is_closed' => ...], ...]
+        $hoursData = $_POST['hours'] ?? [];
+
+        // 1. On vérifie TOUTES les plages avant d'en enregistrer une seule
+        foreach ($hoursData as $data) {
+            $isClosed = isset($data['is_closed']);   // case cochée = présente dans $_POST
+            $open  = $data['open_time'] ?? '';
+            $close = $data['close_time'] ?? '';
+
+            // Jour ouvert : les deux heures sont obligatoires, et l'ouverture avant la fermeture
+            if (!$isClosed && (!$open || !$close || $open >= $close)) {
+                header('Location: index.php?page=admin-hours&error=times');
+                exit;
+            }
+        }
+
+        // 2. Tout est valide : on enregistre
+        $hoursManager = new OpeningHoursManager();
+        foreach ($hoursData as $id => $data) {
+            $isClosed = isset($data['is_closed']);
+            $hoursManager->updateHour(
+                (int) $id,
+                $isClosed ? null : $data['open_time'],
+                $isClosed ? null : $data['close_time'],
+                $isClosed
+            );
+        }
+
+        header('Location: index.php?page=admin-hours&success=updated');
+        exit;
+    }
+
+    // Ajoute une nouvelle plage
+    public function createHourValid() {
+        Auth::requireStaff();
+
+        $day   = (int) ($_POST['day_of_week'] ?? 0);
+        $open  = $_POST['open_time'] ?? '';
+        $close = $_POST['close_time'] ?? '';
+
+        // Jour entre 1 et 7, heures remplies, ouverture avant fermeture
+        if ($day < 1 || $day > 7 || !$open || !$close || $open >= $close) {
+            header('Location: index.php?page=admin-hours&error=times');
+            exit;
+        }
+
+        $hoursManager = new OpeningHoursManager();
+        $hoursManager->createHour($day, $open, $close);
+
+        header('Location: index.php?page=admin-hours&success=created');
+        exit;
+    }
+
+    // Supprime une plage
+    public function deleteHour() {
+        Auth::requireStaff();
+
+        $hoursManager = new OpeningHoursManager();
+        $hoursManager->deleteHour((int) ($_GET['id'] ?? 0));
+
+        header('Location: index.php?page=admin-hours&success=deleted');
         exit;
     }
 }

@@ -7,6 +7,7 @@ ini_set('display_startup_errors', 1);
 require __DIR__ . '/controllers/PostsController.php';
 require __DIR__ . '/controllers/AdminController.php';
 require __DIR__ . '/controllers/UsersController.php';
+require_once __DIR__ . '/helpers/Auth.php';
 
 $postsController = new PostsController();
 $adminController = new AdminController();
@@ -35,13 +36,6 @@ else if($page === 'login-valid') {
 }
 else if($page === 'logout') {
     $usersController->logout();
-}
-
-else if($page === 'post') {
-    $postsController->post();
-}
-else if($page === 'comment') {
-    $postsController->comment();
 }
  else if ($page === 'services') {
     $postsController->services();
@@ -73,7 +67,15 @@ else if($page === 'comment') {
 } else if ($page === 'delete-news') {
     $adminController->deleteNews();
 }
- else {
+ else if ($page === 'admin-hours') {
+    $adminController->adminHours();
+} else if ($page === 'update-hours-valid') {
+    $adminController->updateHoursValid();
+} else if ($page === 'create-hour-valid') {
+    $adminController->createHourValid();
+} else if ($page === 'delete-hour') {
+    $adminController->deleteHour();
+} else {
     http_response_code(404);
     echo "Page introuvable";
 }
