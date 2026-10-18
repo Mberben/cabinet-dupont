@@ -47,7 +47,20 @@ class ServicesManager {
         // Renvoie la liste des services au contrôleur
         return $services;
     }
-        // Supprime un service (MySQL refuse si un rendez-vous l'utilise : ON DELETE RESTRICT)
+
+    // Récupère un seul service par son id (null s'il n'existe pas)
+    // Sert à pré-remplir le formulaire de modification et à connaître la durée lors d'une prise de RDV
+    public function getService(int $id): ?Service
+    {
+        $pdo = $this->connectDB();
+        $request = $pdo->prepare('SELECT * FROM services WHERE id = :id');
+        $request->execute(['id' => $id]);
+        $data = $request->fetch();
+
+        return $data ? new Service($data) : null;
+    }
+
+    // Supprime un service (MySQL refuse si un rendez-vous l'utilise : ON DELETE RESTRICT)
     public function deleteService(int $id): void
     {
         $pdo = $this->connectDB();
@@ -55,7 +68,7 @@ class ServicesManager {
         $request->execute(['id' => $id]);
     }
 
-        // Ajoute un nouveau service (l'image est facultative : null si aucune)
+    // Ajoute un nouveau service (l'image est facultative : null si aucune)
     public function createService(string $name, string $description, int $duration, ?string $image): void
     {
         $pdo = $this->connectDB();
@@ -65,6 +78,20 @@ class ServicesManager {
             'description' => $description,
             'duration'    => $duration,
             'image'       => $image
+        ]);
+    }
+
+    // Met à jour un service existant (WHERE id : on ne modifie que celui-là)
+    public function updateService(int $id, string $name, string $description, int $duration, ?string $image): void
+    {
+        $pdo = $this->connectDB();
+        $request = $pdo->prepare('UPDATE services SET name = :name, description = :description, duration = :duration, image = :image WHERE id = :id');
+        $request->execute([
+            'name'        => $name,
+            'description' => $description,
+            'duration'    => $duration,
+            'image'       => $image,
+            'id'          => $id
         ]);
     }
 }

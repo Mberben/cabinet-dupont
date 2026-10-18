@@ -72,4 +72,33 @@ class OpeningHoursManager {
         $request = $pdo->prepare('DELETE FROM opening_hours WHERE id = :id');
         $request->execute(['id' => $id]);
     }
+
+        // Vrai si le créneau [début, début + durée] tient entièrement dans une plage d'ouverture
+    public function isOpen(string $start, int $duration): bool
+    {
+        $startTs = strtotime($start);
+        $endTs   = $startTs + $duration * 60;
+
+        // Un rendez-vous ne peut pas déborder sur le jour suivant
+        if (date('Y-m-d', $startTs) !== date('Y-m-d', $endTs)) {
+            return false;
+        }
+
+        $pdo = $this->connectDB();
+        // Une plage ouverte du bon jour qui commence avant le RDV et finit après
+        $request = $pdo->prepare('
+            SELECT COUNT(*) FROM opening_hours
+            WHERE day_of_week = :day
+              AND is_closed = 0
+              AND open_time <= :start_time
+              AND close_time >= :end_time
+        ');
+        $request->execute([
+            'day'        => (int) date('N', $startTs),   // 1 = lundi, comme day_of_week
+            'start_time' => date('H:i:s', $startTs),
+            'end_time'   => date('H:i:s', $endTs)
+        ]);
+
+        return (int) $request->fetchColumn() > 0;
+    }
 }

@@ -8,10 +8,12 @@ require __DIR__ . '/controllers/PostsController.php';
 require __DIR__ . '/controllers/AdminController.php';
 require __DIR__ . '/controllers/UsersController.php';
 require_once __DIR__ . '/helpers/Auth.php';
+require __DIR__ . '/controllers/AppointmentsController.php';
 
 $postsController = new PostsController();
 $adminController = new AdminController();
 $usersController = new UsersController();
+$appointmentsController = new AppointmentsController();
 $page =$_GET['page'] ?? 'home';
 
 if($page === 'home'){
@@ -75,6 +77,22 @@ else if($page === 'logout') {
     $adminController->createHourValid();
 } else if ($page === 'delete-hour') {
     $adminController->deleteHour();
+} else if ($page === 'admin-patients') {
+    $adminController->adminPatients();
+} else if ($page === 'create-patient') {
+    $adminController->createPatient();
+} else if ($page === 'create-patient-valid') {
+    $adminController->createPatientValid();
+} else if ($page === 'update-patient') {
+    $adminController->updatePatient();
+} else if ($page === 'update-patient-valid') {
+    $adminController->updatePatientValid();
+} else if ($page === 'delete-patient') {
+    $adminController->deletePatient();
+} else if ($page === 'appointment') {
+    $appointmentsController->appointment();
+} else if ($page === 'appointment-valid') {
+    $appointmentsController->appointmentValid();
 } else {
     http_response_code(404);
     echo "Page introuvable";

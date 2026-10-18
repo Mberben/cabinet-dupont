@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../models/ServicesManager.php';
 require_once __DIR__ . '/../models/NewsManager.php';
 require_once __DIR__ . '/../models/OpeningHoursManager.php';
+require_once __DIR__ . '/../models/UsersManager.php';
 
 // Contrôleur du back office : toutes les pages réservées au personnel du cabinet
 class AdminController {
@@ -331,6 +332,110 @@ class AdminController {
         $hoursManager->deleteHour((int) ($_GET['id'] ?? 0));
 
         header('Location: index.php?page=admin-hours&success=deleted');
+        exit;
+    }
+
+        // ===== PATIENTS =====
+
+    // Liste des patients
+    public function adminPatients() {
+        Auth::requireStaff();
+        $usersManager = new UsersManager();
+        $patients = $usersManager->getPatients();
+        require 'views/admin-patients.php';
+    }
+
+    // Formulaire d'ajout d'un patient
+    public function createPatient() {
+        Auth::requireStaff();
+        require 'views/create-patient.php';
+    }
+
+    // Traitement de l'ajout
+    public function createPatientValid() {
+        Auth::requireStaff();
+
+        $firstname = trim($_POST['firstname'] ?? '');
+        $lastname  = trim($_POST['lastname'] ?? '');
+        $email     = trim($_POST['email'] ?? '');
+        $phone     = trim($_POST['phone'] ?? '') ?: null;   // champ vide → null en base
+
+        if (!$firstname || !$lastname || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            header('Location: index.php?page=create-patient&error=fields');
+            exit;
+        }
+
+        $usersManager = new UsersManager();
+
+        // L'email est UNIQUE en base : on vérifie avant pour afficher un message clair
+        if ($usersManager->emailUsedByOther($email)) {
+            header('Location: index.php?page=create-patient&error=email');
+            exit;
+        }
+
+        $usersManager->createPatient($firstname, $lastname, $email, $phone);
+
+        header('Location: index.php?page=admin-patients&success=created');
+        exit;
+    }
+
+    // Formulaire de modification, pré-rempli
+    public function updatePatient() {
+        Auth::requireStaff();
+
+        $usersManager = new UsersManager();
+        $patient = $usersManager->getPatient((int) ($_GET['id'] ?? 0));
+
+        if (!$patient) {
+            header('Location: index.php?page=admin-patients');
+            exit;
+        }
+
+        require 'views/update-patient.php';
+    }
+
+    // Traitement de la modification
+    public function updatePatientValid() {
+        Auth::requireStaff();
+
+        $id        = (int) ($_GET['id'] ?? 0);
+        $firstname = trim($_POST['firstname'] ?? '');
+        $lastname  = trim($_POST['lastname'] ?? '');
+        $email     = trim($_POST['email'] ?? '');
+        $phone     = trim($_POST['phone'] ?? '') ?: null;
+
+        $usersManager = new UsersManager();
+
+        if (!$usersManager->getPatient($id)) {
+            header('Location: index.php?page=admin-patients');
+            exit;
+        }
+
+        if (!$firstname || !$lastname || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            header('Location: index.php?page=update-patient&id=' . $id . '&error=fields');
+            exit;
+        }
+
+        // Email déjà pris par quelqu'un d'autre que ce patient
+        if ($usersManager->emailUsedByOther($email, $id)) {
+            header('Location: index.php?page=update-patient&id=' . $id . '&error=email');
+            exit;
+        }
+
+        $usersManager->updatePatient($id, $firstname, $lastname, $email, $phone);
+
+        header('Location: index.php?page=admin-patients&success=updated');
+        exit;
+    }
+
+    // Suppression d'un patient
+    public function deletePatient() {
+        Auth::requireStaff();
+
+        $usersManager = new UsersManager();
+        $usersManager->deletePatient((int) ($_POST['id'] ?? 0));
+
+        header('Location: index.php?page=admin-patients&success=deleted');
         exit;
     }
 }
