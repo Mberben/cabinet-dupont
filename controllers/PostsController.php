@@ -31,6 +31,12 @@ class PostsController {
         require __DIR__ . '/../views/services.php';
     }
 
+        // Page À propos : présentation du Dr Dupont et de son équipe (contenu fixe)
+    public function about()
+    {
+        require __DIR__ . '/../views/about.php';
+    }
+
     // Page Actualités : liste de toutes les actualités
     public function newsList()
     {

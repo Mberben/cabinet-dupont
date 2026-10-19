@@ -105,6 +105,8 @@ else if($page === 'logout') {
     $adminController->updateAppointmentValid();
 } else if ($page === 'my-appointments') {
     $appointmentsController->myAppointments();
+} else if ($page === 'about') {
+    $postsController->about();
 } else {
     http_response_code(404);
     echo "Page introuvable";
