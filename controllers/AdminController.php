@@ -4,6 +4,7 @@ require_once __DIR__ . '/../models/ServicesManager.php';
 require_once __DIR__ . '/../models/NewsManager.php';
 require_once __DIR__ . '/../models/OpeningHoursManager.php';
 require_once __DIR__ . '/../models/UsersManager.php';
+require_once __DIR__ . '/../models/AppointmentsManager.php';
 
 // Contrôleur du back office : toutes les pages réservées au personnel du cabinet
 class AdminController {
@@ -436,6 +437,102 @@ class AdminController {
         $usersManager->deletePatient((int) ($_POST['id'] ?? 0));
 
         header('Location: index.php?page=admin-patients&success=deleted');
+        exit;
+    }
+
+        // ===== RENDEZ-VOUS =====
+
+    // Liste de tous les rendez-vous
+    public function adminAppointments() {
+        Auth::requireStaff();
+        $appointmentsManager = new AppointmentsManager();
+        $appointments = $appointmentsManager->getAllAppointments();
+        require 'views/admin-appointments.php';
+    }
+
+    // Confirmer un rendez-vous
+    public function confirmAppointment() {
+        Auth::requireStaff();
+        $appointmentsManager = new AppointmentsManager();
+        $appointmentsManager->updateStatus((int) ($_POST['id'] ?? 0), 'confirmed');
+        header('Location: index.php?page=admin-appointments&success=confirmed');
+        exit;
+    }
+
+    // Annuler un rendez-vous (on garde la ligne pour l'historique)
+    public function cancelAppointment() {
+        Auth::requireStaff();
+        $appointmentsManager = new AppointmentsManager();
+        $appointmentsManager->updateStatus((int) ($_POST['id'] ?? 0), 'cancelled');
+        header('Location: index.php?page=admin-appointments&success=cancelled');
+        exit;
+    }
+
+    // Formulaire de modification d'un rendez-vous
+    public function updateAppointment() {
+        Auth::requireStaff();
+
+        $appointmentsManager = new AppointmentsManager();
+        $appointment = $appointmentsManager->getAppointment((int) ($_GET['id'] ?? 0));
+
+        if (!$appointment) {
+            header('Location: index.php?page=admin-appointments');
+            exit;
+        }
+
+        $servicesManager = new ServicesManager();
+        $services = $servicesManager->getServices();
+
+        require 'views/update-appointment.php';
+    }
+
+    // Traitement de la modification : mêmes vérifications que la prise de rendez-vous
+    public function updateAppointmentValid() {
+        Auth::requireStaff();
+
+        $id        = (int) ($_GET['id'] ?? 0);
+        $serviceId = (int) ($_POST['service_id'] ?? 0);
+        $date      = $_POST['date'] ?? '';
+        $time      = $_POST['time'] ?? '';
+        $errorUrl  = 'index.php?page=update-appointment&id=' . $id;
+
+        $appointmentsManager = new AppointmentsManager();
+        if (!$appointmentsManager->getAppointment($id)) {
+            header('Location: index.php?page=admin-appointments');
+            exit;
+        }
+
+        $servicesManager = new ServicesManager();
+        $service = $servicesManager->getService($serviceId);
+
+        if (!$service || !$date || !$time) {
+            header('Location: ' . $errorUrl . '&error=fields');
+            exit;
+        }
+
+        $start = $date . ' ' . $time . ':00';
+        $duration = $service->getDuration();
+
+        if (strtotime($start) <= time()) {
+            header('Location: ' . $errorUrl . '&error=past');
+            exit;
+        }
+
+        $hoursManager = new OpeningHoursManager();
+        if (!$hoursManager->isOpen($start, $duration)) {
+            header('Location: ' . $errorUrl . '&error=closed');
+            exit;
+        }
+
+        // On exclut ce rendez-vous lui-même de la vérification de chevauchement
+        if (!$appointmentsManager->isSlotFree($start, $duration, $id)) {
+            header('Location: ' . $errorUrl . '&error=taken');
+            exit;
+        }
+
+        $appointmentsManager->updateAppointment($id, $start, $serviceId);
+
+        header('Location: index.php?page=admin-appointments&success=updated');
         exit;
     }
 }

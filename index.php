@@ -93,6 +93,18 @@ else if($page === 'logout') {
     $appointmentsController->appointment();
 } else if ($page === 'appointment-valid') {
     $appointmentsController->appointmentValid();
+} else if ($page === 'admin-appointments') {
+    $adminController->adminAppointments();
+} else if ($page === 'confirm-appointment') {
+    $adminController->confirmAppointment();
+} else if ($page === 'cancel-appointment') {
+    $adminController->cancelAppointment();
+} else if ($page === 'update-appointment') {
+    $adminController->updateAppointment();
+} else if ($page === 'update-appointment-valid') {
+    $adminController->updateAppointmentValid();
+} else if ($page === 'my-appointments') {
+    $appointmentsController->myAppointments();
 } else {
     http_response_code(404);
     echo "Page introuvable";

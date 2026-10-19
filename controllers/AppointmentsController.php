@@ -101,4 +101,22 @@ class AppointmentsController {
         header('Location: index.php?page=appointment&success=1');
         exit;
     }
+
+        // Page "Mes rendez-vous" : réservée aux patients connectés
+    public function myAppointments()
+    {
+        Auth::requireLogin();
+
+        // Le personnel n'a pas de rendez-vous : on le renvoie vers le back office
+        if (Auth::isStaff()) {
+            header('Location: index.php?page=admin-appointments');
+            exit;
+        }
+
+        // On lit l'id dans la SESSION, jamais dans l'URL : un patient ne peut voir que les siens
+        $appointmentsManager = new AppointmentsManager();
+        $appointments = $appointmentsManager->getAppointmentsByPatient((int) $_SESSION['user_id']);
+
+        require __DIR__ . '/../views/my-appointments.php';
+    }
 }
