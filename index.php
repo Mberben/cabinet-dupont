@@ -1,8 +1,12 @@
 <?php
 session_start();
+
+require_once __DIR__ . '/config.php';
+
+// En local (DEBUG = true) : on affiche les erreurs pour déboguer
+// En ligne (DEBUG = false) : on les cache aux visiteurs
 error_reporting(E_ALL);
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
+ini_set('display_errors', DEBUG ? '1' : '0');
 
 require __DIR__ . '/controllers/PostsController.php';
 require __DIR__ . '/controllers/AdminController.php';
@@ -107,6 +111,10 @@ else if($page === 'logout') {
     $appointmentsController->myAppointments();
 } else if ($page === 'about') {
     $postsController->about();
+} else if ($page === 'update-service') {
+    $adminController->updateService();
+} else if ($page === 'update-service-valid') {
+    $adminController->updateServiceValid();
 } else {
     http_response_code(404);
     echo "Page introuvable";
